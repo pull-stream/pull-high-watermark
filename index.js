@@ -16,6 +16,8 @@ module.exports =  function (highWaterMark) {
       reading = true
       return read(ended || ending, function (end, data) {
         reading = false
+        if(end && end !== true)
+            ended = ended || end
         ending = ending || end
         if(data != null) buffer.push(data)
 
