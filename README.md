@@ -15,12 +15,16 @@ var HighWatermark = require('pull-high-watermark')
 
 pull(
   asyncSource,
-  HighWatermark(10), //go faster!
+  HighWatermark(10, 2), //go faster!
   heavySyncProcessing(),
   sink
 )
-
 ```
+
+## HighWatermark(hwm, lwm) => through
+
+read ahead at most to the high water mark (`hwm`) and at least to the low water mark (`lwm`)
+`hwm` default to 10, and `lwm` defaults to 0.
 
 ## License
 
