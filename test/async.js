@@ -1,5 +1,6 @@
 var pull = require('pull-stream')
 var HighWaterMark = require('../')
+var Spec = require('pull-spec')
 
 var tape = require('tape')
 
@@ -38,15 +39,15 @@ function syncSource (i) {
 // breaks, just stalls after the error
 
 tape('async then error', function (t) {
-  pull(source(), HighWaterMark(), pull.collect(function (err, ary) {
+  pull(Spec(source()), HighWaterMark(), pull.collect(function (err, ary) {
     t.ok(err)
-    t.deepEqual(ary, [2,1])
+    t.ok(ary.length <= 2)
     t.end()
   }))
 })
 
 tape('sync then error', function (t) {
-  pull(syncSource(), HighWaterMark(), pull.collect(function (err, ary) {
+  pull(Spec(syncSource()), HighWaterMark(), pull.collect(function (err, ary) {
     t.ok(err)
     t.deepEqual(ary, [])
     t.end()
@@ -55,20 +56,27 @@ tape('sync then error', function (t) {
 
 
 tape('sync then end', function (t) {
-  pull(pull.values([3,2,1]), HighWaterMark(), pull.collect(function (err, ary) {
-    t.notOk(err)
-    t.deepEqual(ary, [3, 2,1])
-    t.end()
-  }))
+  pull(
+    Spec(pull.values([3,2,1])),
+    HighWaterMark(),
+    pull.collect(function (err, ary) {
+      t.notOk(err)
+      t.deepEqual(ary, [3,2,1])
+      t.end()
+    })
+  )
 })
 
-tape('sync then end', function (t) {
-  pull(pull.values([3,2,1]),
-    pull.asyncMap(function (d, cb) {
-      setTimeout(function () {
-        cb(null, d)
+tape('async then end', function (t) {
+  pull(Spec(pull(
+      pull.values([3,2,1]),
+      pull.asyncMap(function (d, cb) {
+        console.log("A", d)
+        setTimeout(function () {
+          cb(null, d)
+        })
       })
-    }),
+    )),
     HighWaterMark(),
     pull.collect(function (err, ary) {
     t.notOk(err)
