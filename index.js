@@ -1,39 +1,55 @@
-module.exports =  function (highWaterMark) {
+
+module.exports = function (hwm, lwm) {
+  hwm = hwm || 10
+  lwm = lwm || 0
+  var reading = false, ended = false, buffer = [], _cb = null
   return function (read) {
-    var buffer = [], waiting = [], ended, ending, reading = false
-    highWaterMark = highWaterMark || 10
-
-    function readAhead () {
-      while(waiting.length && (buffer.length || ended))
-        waiting.shift()(ended, ended ? null : buffer.shift())
-
-      if (!buffer.length && ending) ended = ending;
-    }
-
-    function next () {
-      if(ended || ending || reading || buffer.length >= highWaterMark)
-        return
+    function more () {
+      if(reading || ended || buffer.length > hwm) return
       reading = true
-      return read(ended || ending, function (end, data) {
-        reading = false
-        if(end && end !== true)
-            ended = ended || end
-        ending = ending || end
-        if(data != null) buffer.push(data)
+      read(null, function next (end, data) {
+        if(end) ended = end
+        else buffer.push(data)
 
-        next(); readAhead()
+        reading = false
+        more()
+
+        maybe(_cb)
       })
     }
 
-    ;(setImmediate || process.nextTick)(next)
+    function maybe (cb) {
+      //<delay> callback, if the buffer is smaller than <size>
+      if(!cb) return
+      if(!ended && buffer.length < lwm) {
+          return _cb = cb
+      }
 
-    return function (end, cb) {
-      ended = ended || end
-      waiting.push(cb)
+      _cb = null
+      if(ended && ended !== true) cb(ended)
+      else if(buffer.length) cb(null, buffer.shift())
+      else if(ended) cb(ended)
+      else _cb = cb
+    }
 
-      next(); readAhead()
+    more()
+
+    return function (abort, cb) {
+      if(abort) read(abort, cb)
+      else
+        maybe(cb)
+
+      more()
     }
   }
 }
+
+
+
+
+
+
+
+
 
 
