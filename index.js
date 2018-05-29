@@ -1,11 +1,12 @@
 
-module.exports = function (hwm, lwm) {
+module.exports = function (hwm, lwm, group) {
   hwm = hwm || 10
   lwm = lwm || 0
+  group = !!group
   var reading = false, ended = false, buffer = [], _cb = null
   return function (read) {
     function more () {
-      if(reading || ended || buffer.length > hwm) return
+      if(reading || ended || buffer.length >= hwm) return
       reading = true
       read(null, function next (end, data) {
         if(end) ended = end
@@ -27,8 +28,13 @@ module.exports = function (hwm, lwm) {
 
       _cb = null
       if(ended && ended !== true) cb(ended)
-      else if(buffer.length) cb(null, buffer.shift())
-      else if(ended) cb(ended)
+      else if(buffer.length) {
+        if(group) {
+          var items = buffer
+          buffer = []
+          cb(null, items)
+        } else cb(null, buffer.shift())
+      } else if(ended) cb(ended)
       else _cb = cb
     }
 
