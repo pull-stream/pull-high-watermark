@@ -29,7 +29,7 @@ module.exports = function (hwm, lwm, group) {
       _cb = null
       if(ended && ended !== true) cb(ended)
       else if(buffer.length) {
-        if (group) {
+        if(group) {
           var items = buffer
           buffer = []
           cb(null, items)
