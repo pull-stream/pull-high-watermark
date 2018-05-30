@@ -85,4 +85,77 @@ tape('async then end', function (t) {
   }))
 })
 
+tape('sync group then end', function (t) {
+  pull(Spec(pull.values([3,2,1])),
+    HighWaterMark(2, 1, true),
+    pull.collect(function (err, ary) {
+    t.notOk(err)
+    t.deepEqual(ary, [[3,2], [1]])
+    t.end()
+  }))
+})
 
+tape('async group then end', function (t) {
+  pull(Spec(pull(
+      pull.values([3,2,1]),
+      pull.asyncMap(function (d, cb) {
+        setTimeout(function () {
+          cb(null, d)
+        })
+      })
+    )),
+    HighWaterMark(2, 1, true),
+    pull.collect(function (err, ary) {
+    t.notOk(err)
+    t.deepEqual(ary, [[3], [2], [1]])
+    t.end()
+  }))
+})
+
+tape('async group slow consume then end', function (t) {
+  pull(Spec(pull(
+      pull.values([3,2,1,0]),
+      pull.asyncMap(function (d, cb) {
+        setTimeout(function () {
+          cb(null, d)
+        })
+      })
+    )),
+    HighWaterMark(2, 1, true),
+    pull.asyncMap(function (d, cb) {
+      setTimeout(function () {
+        cb(null, d)
+      }, 10)
+    }),
+    pull.collect(function (err, ary) {
+    t.notOk(err)
+    t.deepEqual(ary, [[3], [2, 1], [0]])
+    t.end()
+  }))
+})
+
+tape('segmented sync group slow consume then end', function (t) {
+  pull(Spec(pull(
+      pull.values([3,2,1,0]),
+      pull.asyncMap(function (d, cb) {
+        if (d === 1) {
+          setTimeout(function () {
+            cb(null, d)
+          })
+        } else {
+          cb(null, d)
+        }
+      })
+    )),
+    HighWaterMark(2, 1, true),
+    pull.asyncMap(function (d, cb) {
+      setTimeout(function () {
+        cb(null, d)
+      }, 10)
+    }),
+    pull.collect(function (err, ary) {
+    t.notOk(err)
+    t.deepEqual(ary, [[3, 2], [1, 0]])
+    t.end()
+  }))
+})
