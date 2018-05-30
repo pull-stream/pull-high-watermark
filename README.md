@@ -21,10 +21,14 @@ pull(
 )
 ```
 
-## HighWatermark(hwm, lwm) => through
+## HighWatermark(hwm, lwm[, group]) => through
 
 read ahead at most to the high water mark (`hwm`) and at least to the low water mark (`lwm`)
 `hwm` default to 10, and `lwm` defaults to 0.
+
+the `group` option indicates that the buffer should be emitted wholesale as an
+array. this allows consumers to run batch operations on values, while avoiding
+slowing down the upstream producer. defaults to `false`.
 
 ## License
 
